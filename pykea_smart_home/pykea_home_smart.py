@@ -20,6 +20,8 @@ import os
 import re
 from colorsys import rgb_to_hls
 import config
+import time
+import threading
 
 
 class PykeaHomeSmart:
@@ -33,6 +35,9 @@ class PykeaHomeSmart:
         self.__light_and_outlet_dict = {}
         #self.__dirigera_ip_str = ''
         #self.__token_str = ''
+
+        self.__stop_event = threading.Event()
+        self.__thread = threading.Thread(target=self.__refresh_loop)
 
         # Preliminary actions
         try:
@@ -68,12 +73,30 @@ class PykeaHomeSmart:
                           'Displays the temprature range for a given light. ctl 2 > displays the range of the light with key 2.')
             }
 
-            self.__light_and_outlet_dict = self.__refresh_object_dicts(self.__dirigera_hub)
+            # Initially fill the dictionary
+            self.__refresh_object_dicts(self.__dirigera_hub)
+            # start the refreshing thread which keeps the dictionary up to date at all times.
+            self.__start_refreshing()
 
         except Exception as e:
             if isinstance(e, SystemExit):
+                self.__stop_refreshing()
                 raise
             print('99')
+
+    def __refresh_loop(self):
+        while not self.__stop_event.is_set() and self.__dirigera_hub and self.__light_and_outlet_dict:
+            # Perform dictionary refresh operations here
+            self.__refresh_object_dicts(self.__dirigera_hub)
+            time.sleep(1)  # Refresh every 1 second
+
+    def __start_refreshing(self):
+        self.__thread.start()
+
+    def __stop_refreshing(self):
+        self.__stop_event.set()
+        self.__thread.join()
+
 
     def get_bridge_token(self):
         user_input_ip = input('Please enter your Dirigera bridges IP address in the format of <192.168.178.01> (without <>).')
@@ -97,7 +120,6 @@ class PykeaHomeSmart:
 
         self.__token_str = input('Please copy the token just given to you here and confirm it by pressing enter.')
         return
-
 
     def __check_if_ip_in_valid_format(self, ip: str):
         # Regular expression pattern for IPv4 address
@@ -135,9 +157,9 @@ class PykeaHomeSmart:
         print('Welcome to the PyKEA home smart console. Enter a cmd or enter h to get a list of commands.')
         return
 
-    @staticmethod
-    def __quit_program():
+    def __quit_program(self):
         print('0')
+        self.__stop_refreshing()
         sys.exit(0)
 
     def __display_help(self):
@@ -408,8 +430,8 @@ class PykeaHomeSmart:
             print('Welcome to the PyKEA home smart console. Enter a cmd or enter h to get a list of commands.')
 
             while True:
-                global light_and_outlet_dict
-                self.__refresh_object_dicts(self.__dirigera_hub)
+                #global light_and_outlet_dict
+                #self.__refresh_object_dicts(self.__dirigera_hub)
 
                 user_input = input('').strip().lower()
                 user_input_parts = user_input.split(' ', 1)
@@ -435,10 +457,12 @@ class PykeaHomeSmart:
                         print('Command not found.')
                     print('\n')
                 except Exception as e:
+                    self.__stop_refreshing()
                     print(e)
         except Exception as e:
             if isinstance(e, SystemExit):
                 raise
+            self.__stop_refreshing()
             print(e)
 
 
