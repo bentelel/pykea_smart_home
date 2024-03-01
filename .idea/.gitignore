@@ -1,0 +1,5 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+/pykea_smart_home/config.py
+/pykea_smart_home/archive/
