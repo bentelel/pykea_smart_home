@@ -1,4 +1,7 @@
 # Default ignored files
 
 pykea_smart_home/config.py
+pykea_smart_home/pykea_home_smart.spec
+pykea_smart_home/build
+pykea_smart_home/dist
 archive/

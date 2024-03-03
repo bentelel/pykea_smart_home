@@ -8,6 +8,7 @@ to do:
 
 -fix bridget connection seeking on first startup. something is wrong with the token that gets created or something like that.
 
+- divide "print list" and "get list" into 2 functions (one for call as a class and one for using CLI?)
 
 > object checks (ison isreachable. ) > auslagern in eigene func?
 
@@ -53,23 +54,24 @@ class PykeaHomeSmart:
             self.__commands = {
                 'h': (self.__display_help, 'Displays the help menu.')
                 , 'q': (self.__quit_program, 'Quits the program.')
+                , 'rs': (self.__restart_program, 'Restarts the program. Useful if you lost connection to your Dirigera bridge.')
                 , 'cl': (self.__clear_console, 'Clears all previous output in the window.')
-                , 'l': (self.display_smart_device_list,
+                , 'l': (self.get_smart_device_list,
                         'Displays all available home smart devices and their key. The key can be used to access the device in other commands.')
-                ,
-                'lr': (self.display_room_list, 'Displays all available rooms, the number of their devices and their names.')
+                , 'lr': (self.display_room_list, 'Displays all available rooms, the number of their devices and their names.')
                 , 'lv': (self.change_light_level,
                          'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the light level of light with key 2 to 100%')
+                , 'lvl': (self.get_light_level, 'Displays the current light level of the device if the device supports light level changes.')
                 , 't': (
                     self.toggle_device,
                     'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off.')
                 , 'tr': (self.toggle_room,
                          'Toggles all devices in a given room on or off. tr arbeitszimmer > toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to toggle by name: t some_device n > toggles the device named \'some_device\'.')
-                , 'c': (self.change_light_color,
+                , 'c': (self.set_light_color,
                         'Change the devices color. takes integer parameters key r g b between 0 - 255. c 2 255 0 0 > sets the color of device 2 to pure red.')
-                , 'ct': (self.change_color_temp,
+                , 'ct': (self.set_color_temp,
                          'Changes the color temperatur of a light. Takes one integer parameter which has to be inbetween the minimum and maximum temperatur of the light.\n \t\t\t To get the temparature range for a light, use command ctl. ct 2 3500 > sets the color temparature of light 2 to 3500 lumen.')
-                , 'ctl': (self.state_light_temp_range,
+                , 'ctl': (self.get_light_color_temp_range,
                           'Displays the temprature range for a given light. ctl 2 > displays the range of the light with key 2.')
             }
 
@@ -88,7 +90,7 @@ class PykeaHomeSmart:
         while not self.__stop_event.is_set() and self.__dirigera_hub and self.__light_and_outlet_dict:
             # Perform dictionary refresh operations here
             self.__refresh_object_dicts(self.__dirigera_hub)
-            time.sleep(1)  # Refresh every 1 second
+            time.sleep(config.refresh_rate_in_s)  # Refresh every 1 second
 
     def __start_refreshing(self):
         self.__thread.start()
@@ -162,6 +164,10 @@ class PykeaHomeSmart:
         self.__stop_refreshing()
         sys.exit(0)
 
+    def __restart_program(self):
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+
     def __display_help(self):
         for key, val in self.__commands.items():
             print("{:<10} {:<100}".format(
@@ -197,7 +203,29 @@ class PykeaHomeSmart:
         self.__dirigera_hub.get_light_by_id(obj.id).set_light_level(level)
         return
 
-    def state_light_temp_range(self, obj_key):
+    def get_light_level(self, obj_key):
+        """
+        States the current light level of the device if it supports light level changes.
+        :param obj_key: Device key of the device dictionary. integer
+        :return: return light level as an integer between 1 and 100.
+        """
+        try:
+            obj = self.__light_and_outlet_dict[int(obj_key)]
+        except:
+            print('The device key invalid. Check list to see all available devices.')
+            return
+        if not obj.is_reachable:
+            print('The device not reachable. Please make sure the device is powered on.')
+            return
+        if not obj.attributes.is_on:
+            print('The device not turned on. The hue will be changed anyhow.')
+        if 'lightLevel' not in obj.capabilities.can_receive:
+            print('The device does not support light level changes.')
+            return
+        print('The light level of device %s is %s%%.' %(str(self.__dirigera_hub.get_light_by_id(obj.id).attributes.custom_name), str(self.__dirigera_hub.get_light_by_id(obj.id).attributes.light_level)))
+        return int(self.__dirigera_hub.get_light_by_id(obj.id).attributes.light_level)
+
+    def get_light_color_temp_range(self, obj_key):
         """
         Returns the minimum, maximum and current color temperature of the device if the device supports it.
         :param obj_key: Device key of the device dictionary. integer
@@ -225,7 +253,7 @@ class PykeaHomeSmart:
             print('The device is currently not reachable. Please make sure the device is powered on.')
             return [int(t_min), int(t_max), int(t_cur)]
 
-    def change_color_temp(self, obj_key, temp):
+    def set_color_temp(self, obj_key, temp):
         """
         Changes the color temperature if the device supports it.
         :param obj_key: Device key of the device dictionary. integer
@@ -258,7 +286,7 @@ class PykeaHomeSmart:
         self.__dirigera_hub.get_light_by_id(obj.id).set_color_temperature(temp)
         return
 
-    def change_light_color(self, obj_key, r: int, g: int, b: int):
+    def set_light_color(self, obj_key, r: int, g: int, b: int):
         """
         Changes the light color of the device if the device supports it.
         :param obj_key: Device key of the device dictionary. integer
@@ -360,7 +388,7 @@ class PykeaHomeSmart:
         return room_devices_list
 
 
-    def display_smart_device_list(self):
+    def get_smart_device_list(self):
         """
         Displays a list of all devices, their key, their custom name, their room, their isOn state, their type, if they are reachable and their bridge ID.
         :return: object_list [key, name, room, isOn, type, is_reachable, ID]
@@ -396,6 +424,10 @@ class PykeaHomeSmart:
                 obj = self.get_device_by_custom_name(str(obj_key).lower())
         except:
             print('Device key or name is invalid. Check device list to see all available devices.')
+            return
+
+        if obj is None:
+            print('Device not found (None).')
             return
 
         if not obj.is_reachable:
