@@ -10,7 +10,7 @@ to do:
 
 - divide "print list" and "get list" into 2 functions (one for call as a class and one for using CLI?)
 
-> object checks (ison isreachable. ) > auslagern in eigene func?
+> object checks (ison isreachable.) > auslagern in eigene func?
 
 @author: LukasBentele
 """
@@ -99,7 +99,6 @@ class PykeaHomeSmart:
         self.__stop_event.set()
         self.__thread.join()
 
-
     def get_bridge_token(self):
         user_input_ip = input('Please enter your Dirigera bridges IP address in the format of <192.168.178.01> (without <>).')
         if not self.__check_if_ip_in_valid_format(user_input_ip):
@@ -160,9 +159,13 @@ class PykeaHomeSmart:
         return
 
     def __quit_program(self):
+        """Quits the app and connection to the bridge"""
         print('0')
         self.__stop_refreshing()
         sys.exit(0)
+
+    def quit_pykea_home_smart(self):
+        self.__quit_program()
 
     def __restart_program(self):
         python = sys.executable
@@ -360,7 +363,6 @@ class PykeaHomeSmart:
                     self.__dirigera_hub.get_outlet_by_id(obj.id).set_on(outlet_on=not object_is_on_state)
         return
 
-
     def display_room_list(self):
         """
         Displays a list of all rooms and devices in those rooms.
@@ -387,7 +389,6 @@ class PykeaHomeSmart:
 
         return room_devices_list
 
-
     def get_smart_device_list(self):
         """
         Displays a list of all devices, their key, their custom name, their room, their isOn state, their type, if they are reachable and their bridge ID.
@@ -396,14 +397,14 @@ class PykeaHomeSmart:
         object_list = []
         print('#### Homesmart devices ####')
         for key, val in self.__light_and_outlet_dict.items():
-            print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20}".format(
+            print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20} {:<20}".format(
                 'Key: ' + str(key)
                 , ' | Name: ' + val.attributes.custom_name
                 , '  | Room: ' + val.room.name
                 , ' | Is On: ' + str(val.attributes.is_on)
                 , ' | Type: ' + str(val.type)
                 , '  | Reachable: ' + str(val.is_reachable)
-                # , ' | Id: ' + val.id
+                , ' | Id: ' + val.id
             )
             )
             object_list.append([str(key), str(val.attributes.custom_name), str(val.room.name), str(val.attributes.is_on), str(val.type), str(val.is_reachable), str(val.id)])
@@ -453,7 +454,7 @@ class PykeaHomeSmart:
             outlet_list.append(outlet)
 
         light_and_outlet_list = light_list + outlet_list
-        light_and_outlet_list_sorted = sorted(light_and_outlet_list, key=lambda x: x.room.name)
+        light_and_outlet_list_sorted = sorted(light_and_outlet_list, key=lambda x: (x.room.name, x.id))
         self.__light_and_outlet_dict = self.__convert_list_to_dict(light_and_outlet_list_sorted)
         return
 

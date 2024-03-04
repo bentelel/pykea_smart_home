@@ -1,38 +1,36 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 28 21:58:21 2024
+# To do: understand item relationships, how to spawn new items according to a template and fill with connections to backend
+# also how to destroy items and deallocate stuff and how to close the program for good.
 
-@author: Lukas Bentele
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 28 15:58:57 2024
-
-@author: LukasBentele
-"""
 
 import dearpygui.dearpygui as dpg
 import pykea_home_smart as phs
 
+device_list = []
+backend = None
+def instanciate_backend():
+    global backend
+    backend = phs.PykeaHomeSmart()
+    global device_list
+    device_list = backend.get_smart_device_list()
 
-def btn1_clicked():
-    print('btn1 clicked')
+def toggle_device(sender, app_data):
+    user_data = dpg.get_item_user_data(sender)
+    #global backend
+    backend.toggle_device(user_data, 'n')
 
-window_width = 800
-window_height = 600
-dpg.create_context()
+if __name__ == "__main__":
+    instanciate_backend()
+    dpg.create_context()
 
-with dpg.window(width=window_width, height=window_height, pos=(0,0), no_title_bar=True, no_move=True):
-    dpg.add_text("hello world")
-    button1 = dpg.add_button(label="button1", tag="btn1")
-    dpg.set_item_callback("btn1", btn1_clicked)
+    with dpg.window(label="Toggle ", pos=(0, 0)):
+        for device in device_list:
+            tag = device[6]
+            name = device[1]
+            dpg.add_button(label=name, callback=toggle_device, tag=tag, user_data=name)
 
-    slider_int = dpg.add_slider_int(label="slider_int",width=100,min_value=0,max_value=200)
 
-
-dpg.create_viewport(title='Custom Title', width=window_width, height=window_height)
-dpg.setup_dearpygui()
-dpg.show_viewport()
-dpg.start_dearpygui()
-dpg.destroy_context()
+    dpg.create_viewport(title='Custom Title', width=600, height=400)
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
+    dpg.start_dearpygui()
+    dpg.destroy_context()
