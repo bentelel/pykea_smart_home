@@ -10,7 +10,7 @@ to do:
 
 - divide "print list" and "get list" into 2 functions (one for call as a class and one for using CLI?)
 
-> object checks (ison isreachable.) > auslagern in eigene func?
+> object checks (ison isreachable.) > move into it's own function?
 
 @author: LukasBentele
 """
