@@ -72,6 +72,9 @@ class PykeaHomeSmart:
         self.__stop_event.set()
         self.__thread.join()
 
+    def stop_refreshing(self):
+        self.__stop_refreshing()
+
     def get_bridge_token(self, ip_address: str):
         """
         Currently not working!
@@ -134,7 +137,6 @@ class PykeaHomeSmart:
 
     def quit_program(self):
         """Quits the app and connection to the bridge"""
-        print('0')
         self.__stop_refreshing()
         sys.exit(0)
 

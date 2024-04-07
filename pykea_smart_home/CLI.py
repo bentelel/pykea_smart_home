@@ -26,7 +26,7 @@ class CLI:
                     'Quits the program.'
                     ,[])
             , ('rs', 'restart'): (
-                    self.bridge_api.restart_program,
+                    self.restart_program,
                     'Restarts the program. Useful if you lost connection to your Dirigera bridge.'
                     ,[])
             , ('cl', 'clear'): (
@@ -51,7 +51,7 @@ class CLI:
                     ['-n'])
             , ('t', 'toggle'): (
                     self.toggle_device,
-                    'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off.',
+                    'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off. Use flag -n to toggle by name. Name can\'t include spaces.',
                     ['-n'])
             , ('tr', 'toggle_room'): (
                     self.bridge_api.toggle_room,
@@ -84,7 +84,7 @@ class CLI:
         :return: None
         """
         try:
-            user_input_parts = user_input.split(' ', 1)
+            user_input_parts = user_input.split(' ')
             command = user_input_parts.pop(0) #get cmd part of input and delete that from the input list
             flags = [x for x in user_input_parts if x.startswith("-")]
             args = [x for x in user_input_parts if not x.startswith("-")]
@@ -103,7 +103,7 @@ class CLI:
 
     def run_command(self, function, flags: list, args: list):
         if self.has_parameter(function, "flags") and self.has_parameter(function, "args"):
-            function(flags, args)
+            function(args, flags)
         elif self.has_parameter(function, "flags") and not self.has_parameter(function, "args"):
             function(flags)
         elif not self.has_parameter(function, "flags") and self.has_parameter(function, "args"):
@@ -120,6 +120,15 @@ class CLI:
         self.bridge_api.quit_program()
         sys.exit(0)
 
+    def restart_program(self):
+        """
+        This does not work yet! it should kill the underlying bridge API instance and open up a new functional once.
+        The old instance keeps running. However calling the stop refreshing function or quit program function of the API does not work either.
+        :return:
+        """
+        self.clear_console()
+        self.bridge_api = phs.PykeaHomeSmart()
+
     def clear_console(self):
         if os.name == 'nt':
             _ = os.system('cls')
@@ -134,12 +143,16 @@ class CLI:
                 str(key) + ':',
                 val[1]))
 
-    def toggle_device(self, obj_identifier: str, flags: list):
+    def toggle_device(self, args: list, flags: list):
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No valid device identifier was provided")
         try:
             if "-n" in flags:
-                self.bridge_api.toggle_device_by_name(obj_identifier)
+                self.bridge_api.toggle_device_by_name(device_identifier)
             else:
-                self.bridge_api.toggle_device_by_id(int(obj_identifier))
+                self.bridge_api.toggle_device_by_id(int(device_identifier))
         except Exception as e:
             print("Error: " + str(e))
 
