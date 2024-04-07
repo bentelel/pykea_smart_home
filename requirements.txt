@@ -1,0 +1,4 @@
+# Required libraries
+dirigera
+dearpygui
+nicegui
