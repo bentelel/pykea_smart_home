@@ -34,8 +34,6 @@ class PykeaHomeSmart:
         self.__dirigera_ip_str = config.bridge_ip
         self.__token_str = config.bridge_token
         self.__light_and_outlet_dict = {}
-        #self.__dirigera_ip_str = ''
-        #self.__token_str = ''
 
         self.__stop_event = threading.Event()
         self.__thread = threading.Thread(target=self.__refresh_loop)
@@ -51,30 +49,6 @@ class PykeaHomeSmart:
                 , ip_address=self.__dirigera_ip_str
             )
 
-            self.__commands = {
-                'h': (self.__display_help, 'Displays the help menu.')
-                , 'q': (self.__quit_program, 'Quits the program.')
-                , 'rs': (self.__restart_program, 'Restarts the program. Useful if you lost connection to your Dirigera bridge.')
-                , 'cl': (self.__clear_console, 'Clears all previous output in the window.')
-                , 'l': (self.get_smart_device_list,
-                        'Displays all available home smart devices and their key. The key can be used to access the device in other commands.')
-                , 'lr': (self.display_room_list, 'Displays all available rooms, the number of their devices and their names.')
-                , 'lv': (self.change_light_level,
-                         'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the light level of light with key 2 to 100%')
-                , 'lvl': (self.get_light_level, 'Displays the current light level of the device if the device supports light level changes.')
-                , 't': (
-                    self.toggle_device,
-                    'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off.')
-                , 'tr': (self.toggle_room,
-                         'Toggles all devices in a given room on or off. tr arbeitszimmer > toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to toggle by name: t some_device n > toggles the device named \'some_device\'.')
-                , 'c': (self.set_light_color,
-                        'Change the devices color. takes integer parameters key r g b between 0 - 255. c 2 255 0 0 > sets the color of device 2 to pure red.')
-                , 'ct': (self.set_color_temp,
-                         'Changes the color temperatur of a light. Takes one integer parameter which has to be inbetween the minimum and maximum temperatur of the light.\n \t\t\t To get the temparature range for a light, use command ctl. ct 2 3500 > sets the color temparature of light 2 to 3500 lumen.')
-                , 'ctl': (self.get_light_color_temp_range,
-                          'Displays the temprature range for a given light. ctl 2 > displays the range of the light with key 2.')
-            }
-
             # Initially fill the dictionary
             self.__refresh_object_dicts(self.__dirigera_hub)
             # start the refreshing thread which keeps the dictionary up to date at all times.
@@ -83,8 +57,7 @@ class PykeaHomeSmart:
         except Exception as e:
             if isinstance(e, SystemExit):
                 self.__stop_refreshing()
-                raise
-            print('99')
+                raise e
 
     def __refresh_loop(self):
         while not self.__stop_event.is_set() and self.__dirigera_hub and self.__light_and_outlet_dict:
@@ -99,28 +72,33 @@ class PykeaHomeSmart:
         self.__stop_event.set()
         self.__thread.join()
 
-    def get_bridge_token(self):
-        user_input_ip = input('Please enter your Dirigera bridges IP address in the format of <192.168.178.01> (without <>).')
-        if not self.__check_if_ip_in_valid_format(user_input_ip):
-            print('The IP address provided is not in the correct format, please rerun the command and enter the IP address in the correct format.\n '
-                  'A new window will open, please follow the instructions in that window and copy the token you get at the end. You will be asked to then reinsert the token here.')
-        self.__dirigera_ip_str = user_input_ip
+    def get_bridge_token(self, ip_address: str):
+        """
+        Currently not working!
+        Function supplies the bridge token is needed to connect to the dirigera home bridge.
+        :param ip_address: IP address of the bridge in the format <192.168.178.1>
+        :return: token string
+        """
+
+        if not self.__check_if_ip_in_valid_format(ip_address):
+            raise ValueError('The IP address provided is not in the correct format.')
+
+        self.__dirigera_ip_str = ip_address
 
         # 192.168.178.27
         command_base = 'generate-token '
-        command_ip = user_input_ip
+        command_ip = ip_address
         command = command_base + command_ip
         command_and_pause = command + " & echo Please copy the token before proceeding. You will be tasked to reenter it in the next step. & pause"
 
         try:
             os.system(command_and_pause)
         except Exception as e:
-            print('Error: &s' % e)
-            print("Something went wrong, please try again.")
-            self.get_bridge_token()
+            raise('Error: &s' % e)
 
-        self.__token_str = input('Please copy the token just given to you here and confirm it by pressing enter.')
-        return
+        token = 'token as string goes here'
+
+        return token
 
     def __check_if_ip_in_valid_format(self, ip: str):
         # Regular expression pattern for IPv4 address
@@ -143,39 +121,26 @@ class PykeaHomeSmart:
             result_dict[i + 1] = lst[i]
         return result_dict
 
-    def get_device_by_custom_name(self, name: str):
+    def __get_device_by_custom_name(self, name: str):
+        """
+        Gets a device object by its name as specified via the bridge (as opposed to getting it by the ID associated in the device dictionary).
+        :param name: string, custom name of the device
+        :return: device object
+        """
         #global light_and_outlet_dict
         for dev in self.__light_and_outlet_dict.values():
             if dev.attributes.custom_name.lower() == name:
                 return dev
-        raise
 
-    def __clear_console(self):
-        if os.name == 'nt':
-            _ = os.system('cls')
-        else:
-            _ = os.system('clear')
-        print('Welcome to the PyKEA home smart console. Enter a cmd or enter h to get a list of commands.')
-        return
-
-    def __quit_program(self):
+    def quit_program(self):
         """Quits the app and connection to the bridge"""
         print('0')
         self.__stop_refreshing()
         sys.exit(0)
 
-    def quit_pykea_home_smart(self):
-        self.__quit_program()
-
-    def __restart_program(self):
+    def restart_program(self):
         python = sys.executable
         os.execl(python, python, *sys.argv)
-
-    def __display_help(self):
-        for key, val in self.__commands.items():
-            print("{:<10} {:<100}".format(
-                str(key) + ':',
-                val[1]))
 
     def change_light_level(self, obj_key, level):
         """
@@ -269,22 +234,18 @@ class PykeaHomeSmart:
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
         except:
-            print('The device key invalid. Check list to see all available devices.')
-            return
+            raise Exception('The device key invalid. Check list to see all available devices.')
         if not obj.is_reachable:
-            print('The device not reachable. Please make sure the device is powered on.')
-            return
+            raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
-            print('The device is not turned on. The temperature will not be changed.')
-            return
+            raise Exception('The device is not turned on. The temperature will not be changed.')
         if 'colorTemperature' not in obj.capabilities.can_receive:
-            print('The device does not support color temparature changes.')
-            return
+            raise Exception('The device does not support color temparature changes.')
         t_min = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_max
         t_max = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_min
 
         if not (t_min <= temp <= t_max):
-            print('The specified temparature is out of the devices range. The range is %s - %s' % (t_min, t_max))
+            raise Exception('The specified temparature is out of the devices range. The range is %s - %s' % (t_min, t_max))
 
         self.__dirigera_hub.get_light_by_id(obj.id).set_color_temperature(temp)
         return
@@ -307,17 +268,13 @@ class PykeaHomeSmart:
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
         except:
-            print('The device key invalid. Check list to see all available devices.')
-            return
+            raise Exception('The device key invalid. Check list to see all available devices.')
         if not obj.is_reachable:
-            print('The device not reachable. Please make sure the device is powered on.')
-            return
+            raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
-            print('The device is not turned on. The hue will not be changed.')
-            return
+            raise Exception('The device is not turned on. The hue will not be changed.')
         if 'colorHue' not in obj.capabilities.can_receive and 'colorSaturation' not in obj.capabilities.can_receive:
-            print('The device does not support color changes.')
-            return
+            raise Exception('The device does not support color changes.')
 
         # print('hue: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_hue))
         # print('sat: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_saturation))
@@ -350,8 +307,7 @@ class PykeaHomeSmart:
         room = room.lower()
         rooms = list(set(obj.room.name.lower() for obj in self.__light_and_outlet_dict.values()))
         if room not in rooms:
-            print('The room \'%s\' does not exist. Available rooms: %s.' % (room, rooms))
-            return
+            raise Exception('The room \'%s\' does not exist. Available rooms: %s.' % (room, rooms))
 
         for obj in self.__light_and_outlet_dict.values():
             if obj.room.name.lower() == room:
@@ -411,29 +367,47 @@ class PykeaHomeSmart:
         print('  ')
         return object_list
 
-    def toggle_device(self, obj_key, mode=None):
+    def toggle_device_by_name(self, obj_name: str):
         """
         Toggles a device on or off.
-        :param obj_key: Device key of the device dictionary. integer
-        :param mode: Optional - "n" for name mode > allows to toggle the object by name instead of by code.
+        :param obj_name: Device name string
         :return: None
         """
         try:
-            if not mode:
-                obj = self.__light_and_outlet_dict[int(obj_key)]
-            elif mode == 'n':
-                obj = self.get_device_by_custom_name(str(obj_key).lower())
+            obj = self.__get_device_by_custom_name(str(obj_name).lower())
         except:
-            print('Device key or name is invalid. Check device list to see all available devices.')
-            return
+            raise Exception('Device key or name is invalid. Check device list to see all available devices.')
 
         if obj is None:
-            print('Device not found (None).')
-            return
+            raise Exception('Device not found (None).')
 
         if not obj.is_reachable:
-            print('Device not reachable. Please make sure the device is powered on.')
-            return
+            raise Exception('Device not reachable. Please make sure the device is powered on.')
+
+        object_is_on_state = obj.attributes.is_on
+
+        if obj.type == 'light':
+            self.__dirigera_hub.get_light_by_id(obj.id).set_light(lamp_on=not object_is_on_state)
+        elif obj.type == 'outlet':
+            self.__dirigera_hub.get_outlet_by_id(obj.id).set_on(outlet_on=not object_is_on_state)
+        return
+
+    def toggle_device_by_id(self, obj_key: int):
+        """
+        Toggles a device on or off.
+        :param obj_key: Device key of the device dictionary. integer
+        :return: None
+        """
+        try:
+            obj = self.__light_and_outlet_dict[int(obj_key)]
+        except:
+            raise Exception('Device key or name is invalid. Check device list to see all available devices.')
+
+        if obj is None:
+            raise Exception('Device not found (None).')
+
+        if not obj.is_reachable:
+            raise Exception('Device not reachable. Please make sure the device is powered on.')
 
         object_is_on_state = obj.attributes.is_on
 
@@ -458,47 +432,6 @@ class PykeaHomeSmart:
         self.__light_and_outlet_dict = self.__convert_list_to_dict(light_and_outlet_list_sorted)
         return
 
-    def __main(self):
-        try:
-            print('Welcome to the PyKEA home smart console. Enter a cmd or enter h to get a list of commands.')
-
-            while True:
-                #global light_and_outlet_dict
-                #self.__refresh_object_dicts(self.__dirigera_hub)
-
-                user_input = input('').strip().lower()
-                user_input_parts = user_input.split(' ', 1)
-
-                command = user_input_parts[0]
-
-                parameters = user_input_parts[1].split(' ') if len(user_input_parts) > 1 else None
-
-                try:
-                    if command in self.__commands:
-                        if parameters:
-                            if len(parameters) == 1:
-                                self.__commands[command][0](parameters[0])
-                            if len(parameters) == 2:
-                                self.__commands[command][0](parameters[0], parameters[1])
-                            if len(parameters) == 3:
-                                self.__commands[command][0](parameters[0], parameters[1], parameters[2])
-                            if len(parameters) == 4:
-                                self.__commands[command][0](parameters[0], parameters[1], parameters[2], parameters[3])
-                        else:
-                            self.__commands[command][0]()
-                    else:
-                        print('Command not found.')
-                    print('\n')
-                except Exception as e:
-                    self.__stop_refreshing()
-                    print(e)
-        except Exception as e:
-            if isinstance(e, SystemExit):
-                raise
-            self.__stop_refreshing()
-            print(e)
-
 
 if __name__ == "__main__":
     instance = PykeaHomeSmart()
-    instance._PykeaHomeSmart__main()
