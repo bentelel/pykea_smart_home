@@ -170,12 +170,12 @@ class CLI:
 
     def display_room_list(self):
         try:
-            room_list = self.bridge_api.display_room_list()
+            room_dict = self.bridge_api.get_room_dictionary()
             print("Available rooms and devices:")
-            for room in room_list:
+            for key, value in room_dict.items():
                 print('{:<20} {:<20}'.format(
-                    '%s : ' % room[0]
-                    , '%s' % (', '.join(room[1]))
+                    '%s : ' % str(key)
+                    , '%s' % (', '.join(item[0] for item in value))
                 ))
         except Exception as e:
             raise Exception(f"Could not fetch room list from API. \n {e}")

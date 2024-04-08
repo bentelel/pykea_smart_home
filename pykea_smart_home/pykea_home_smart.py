@@ -323,7 +323,7 @@ class PykeaHomeSmart:
                     self.__dirigera_hub.get_outlet_by_id(obj.id).set_on(outlet_on=not object_is_on_state)
         return
 
-    def display_room_list(self):
+    def get_room_dictionary(self):
         """
         Returns a list of all rooms and devices in those rooms.
         :return: room_device_list > [room, [device_name, device_key]]
@@ -331,17 +331,10 @@ class PykeaHomeSmart:
         room_names = list(set(obj.room.name.lower() for obj in self.__light_and_outlet_dict.values()))
         room_devices = {room: [] for room in room_names}
         for key, device in self.__light_and_outlet_dict.items():
-            room_devices[device.room.name.lower()].append(device.attributes.custom_name + '|' + str(key))
+            # fills dict with {room: [(device, device_key)] }
+            room_devices[device.room.name.lower()].append((device.attributes.custom_name, key))
 
-        room_devices_list = []
-        for room, devices in room_devices.items():
-            device_list = []
-            for device in devices:
-                name, key = device.split('|')
-                device_list.append('%s (Key %s)' % (name, key))
-            room_devices_list.append((str(room), device_list))
-
-        return room_devices_list
+        return room_devices
 
     def get_smart_device_list(self):
         """
