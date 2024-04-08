@@ -22,7 +22,7 @@ class CLI:
                     'Displays the help menu.'
                     ,[])
             , ('q', 'quit'): (
-                    self.bridge_api.quit_program,
+                    self.quit,
                     'Quits the program.'
                     ,[])
             , ('rs', 'restart'): (
@@ -34,11 +34,11 @@ class CLI:
                     'Clears all previous output in the window.',
                     [])
             , ('l', 'list'): (
-                    self.bridge_api.get_smart_device_list,
+                    self.display_device_list,
                     'Displays all available home smart devices and their key. The key can be used to access the device in other commands.'
                     ,[])
             , ('lr', 'listroom', 'roomlist'): (
-                    self.bridge_api.display_room_list,
+                    self.display_room_list,
                    'Displays all available rooms, the number of their devices and their names.',
                     [])
             , ('lv', 'slv', 'level', 'set_level'): (
@@ -117,6 +117,11 @@ class CLI:
         return parameter_name in parameters
 
     def quit(self):
+        """
+        Quits the program. Currently this quits because the APIs quit_program() is called. However idially the APIs method should only halt the API and then we use sys.exit in the CLI class to terminate the whole program.
+        But that does not work as intended i think so for now it stays like this.
+        :return:
+        """
         self.bridge_api.quit_program()
         sys.exit(0)
 
@@ -142,6 +147,38 @@ class CLI:
             print("{:<10} {:<100}".format(
                 str(key) + ':',
                 val[1]))
+
+    def display_device_list(self):
+        try:
+            object_list = self.bridge_api.get_smart_device_list()
+            print(object_list)
+
+            print('#### Homesmart devices ####')
+            for obj in object_list:
+                print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20} {:<20}".format(
+                    'Key: ' + str(obj[0])
+                    , ' | Name: ' + str(obj[1])
+                    , '  | Room: ' + str(obj[2])
+                    , ' | Is On: ' + str(obj[3])
+                    , ' | Type: ' + str(obj[4])
+                    , '  | Reachable: ' + str(obj[5])
+                    , ' | Id: ' + str(obj[6])
+                )
+                )
+        except Exception as e:
+            raise Exception(f"Could not fetch device list from API. \n {e}")
+
+    def display_room_list(self):
+        try:
+            room_list = self.bridge_api.display_room_list()
+            print("Available rooms and devices:")
+            for room in room_list:
+                print('{:<20} {:<20}'.format(
+                    '%s : ' % room[0]
+                    , '%s' % (', '.join(room[1]))
+                ))
+        except Exception as e:
+            raise Exception(f"Could not fetch room list from API. \n {e}")
 
     def toggle_device(self, args: list, flags: list):
         try:

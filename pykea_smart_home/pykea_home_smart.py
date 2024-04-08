@@ -323,7 +323,7 @@ class PykeaHomeSmart:
 
     def display_room_list(self):
         """
-        Displays a list of all rooms and devices in those rooms.
+        Returns a list of all rooms and devices in those rooms.
         :return: room_device_list > [room, [device_name, device_key]]
         """
         room_names = list(set(obj.room.name.lower() for obj in self.__light_and_outlet_dict.values()))
@@ -332,41 +332,25 @@ class PykeaHomeSmart:
             room_devices[device.room.name.lower()].append(device.attributes.custom_name + '|' + str(key))
 
         room_devices_list = []
-        print('Available rooms and devices:')
         for room, devices in room_devices.items():
             device_list = []
-
             for device in devices:
                 name, key = device.split('|')
                 device_list.append('%s (Key %s)' % (name, key))
-            print('{:<20} {:<20}'.format(
-                '%s : ' % room
-                , '%s' % (', '.join(device_list))
-            ))
             room_devices_list.append((str(room), device_list))
 
         return room_devices_list
 
     def get_smart_device_list(self):
         """
-        Displays a list of all devices, their key, their custom name, their room, their isOn state, their type, if they are reachable and their bridge ID.
+        Returns a list of all devices, their key, their custom name, their room, their isOn state, their type, if they are reachable and their bridge ID.
         :return: object_list [key, name, room, isOn, type, is_reachable, ID]
         """
         object_list = []
-        print('#### Homesmart devices ####')
         for key, val in self.__light_and_outlet_dict.items():
-            print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20} {:<20}".format(
-                'Key: ' + str(key)
-                , ' | Name: ' + val.attributes.custom_name
-                , '  | Room: ' + val.room.name
-                , ' | Is On: ' + str(val.attributes.is_on)
-                , ' | Type: ' + str(val.type)
-                , '  | Reachable: ' + str(val.is_reachable)
-                , ' | Id: ' + val.id
-            )
-            )
-            object_list.append([str(key), str(val.attributes.custom_name), str(val.room.name), str(val.attributes.is_on), str(val.type), str(val.is_reachable), str(val.id)])
-        print('  ')
+            object_list.append(
+                [str(key), str(val.attributes.custom_name), str(val.room.name), str(val.attributes.is_on), str(val.type),
+                 str(val.is_reachable), str(val.id)])
         return object_list
 
     def toggle_device_by_name(self, obj_name: str):
