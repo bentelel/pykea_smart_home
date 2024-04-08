@@ -46,7 +46,7 @@ class CLI:
                     'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the light level of light with key 2 to 100%',
                     ['-n'])
             , ('glv', 'get_level'): (
-                    self.bridge_api.get_light_level,
+                    self.display_light_level,
                     'Displays the current light level of the device if the device supports light level changes.',
                     ['-n'])
             , ('t', 'toggle'): (
@@ -54,7 +54,7 @@ class CLI:
                     'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off. Use flag -n to toggle by name. Name can\'t include spaces.',
                     ['-n'])
             , ('tr', 'toggle_room'): (
-                    self.bridge_api.toggle_room,
+                    self.toggle_room,
                     'Toggles all devices in a given room on or off. tr arbeitszimmer > toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to toggle by name: t some_device n > toggles the device named \'some_device\'.'
                     ,[])
             , ('c', 'sc', 'color'): (
@@ -180,18 +180,58 @@ class CLI:
         except Exception as e:
             raise Exception(f"Could not fetch room list from API. \n {e}")
 
-    def toggle_device(self, args: list, flags: list):
+    def display_light_level(self, args: list, flags: list):
         try:
             device_identifier = args[0]
         except:
-            raise Exception("No valid device identifier was provided")
+            raise Exception("No device identifier was provided")
         try:
             if "-n" in flags:
-                self.bridge_api.toggle_device_by_name(device_identifier)
-            else:
-                self.bridge_api.toggle_device_by_id(int(device_identifier))
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+        except Exception as e:
+            print(f"Error: {e}")
+        try:
+            light_level = self.bridge_api.get_light_level(device_identifier)
+            print('The light level of device %s is %s%%.' % (
+            str(self.bridge_api.get_device_name(int(device_identifier))),
+            str(light_level)))
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def toggle_device(self, args: list, flags: list):
+        """
+        Toggles a device
+        :param args: [0] > device identifier (name or ID)
+        :param flags: optional: -n > toggle by name
+        :return:
+        """
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No device identifier was provided")
+        try:
+            if "-n" in flags:
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+
+            self.bridge_api.toggle_device_by_id(int(device_identifier))
         except Exception as e:
             print("Error: " + str(e))
+
+    def toggle_room(self, args: list):
+        """
+        Toggles all devices in the given room on or off.
+        Currently, this is a passthrough method.
+        :param args: [0] > room name
+        :return:
+        """
+        try:
+            room_name = args[0]
+        except:
+            raise Exception("No room name was provided")
+        try:
+            self.bridge_api.toggle_room(room_name)
+        except Exception as e:
+            print(e)
 
     def __main(self):
         try:
@@ -200,7 +240,6 @@ class CLI:
             while True:
                 user_input = input('').strip().lower()
                 self.command_parser(user_input)
-                print('\n')
 
         except Exception as e:
             print(e)

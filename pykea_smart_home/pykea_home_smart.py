@@ -124,16 +124,17 @@ class PykeaHomeSmart:
             result_dict[i + 1] = lst[i]
         return result_dict
 
-    def __get_device_by_custom_name(self, name: str):
+    def get_device_id_by_custom_name(self, name: str):
         """
         Gets a device object by its name as specified via the bridge (as opposed to getting it by the ID associated in the device dictionary).
         :param name: string, custom name of the device
-        :return: device object
+        :return: int, Dictionary Key of Device
         """
         #global light_and_outlet_dict
-        for dev in self.__light_and_outlet_dict.values():
-            if dev.attributes.custom_name.lower() == name:
-                return dev
+        for key, value in self.__light_and_outlet_dict.items():
+            if value.attributes.custom_name.lower() == name:
+                return int(key)
+        raise Exception("Device not found.")
 
     def quit_program(self):
         """Quits the app and connection to the bridge"""
@@ -181,19 +182,23 @@ class PykeaHomeSmart:
         """
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-        except:
-            print('The device key invalid. Check list to see all available devices.')
-            return
+        except Exception as e:
+            raise Exception('The device key invalid. Check list to see all available devices.')
         if not obj.is_reachable:
-            print('The device not reachable. Please make sure the device is powered on.')
-            return
+            raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
-            print('The device not turned on. The hue will be changed anyhow.')
+            raise Exception('The device not turned on. The hue will be changed anyhow.')
         if 'lightLevel' not in obj.capabilities.can_receive:
-            print('The device does not support light level changes.')
-            return
-        print('The light level of device %s is %s%%.' %(str(self.__dirigera_hub.get_light_by_id(obj.id).attributes.custom_name), str(self.__dirigera_hub.get_light_by_id(obj.id).attributes.light_level)))
+            raise Exception('The device does not support light level changes.')
         return int(self.__dirigera_hub.get_light_by_id(obj.id).attributes.light_level)
+
+    def get_device_name(self, obj_key):
+        try:
+            device = self.__light_and_outlet_dict[obj_key]
+            name = device.attributes.custom_name
+            return name
+        except Exception as e:
+            raise Exception(f"Could not find device name. \n Error trace: {e}")
 
     def get_light_color_temp_range(self, obj_key):
         """
@@ -352,31 +357,6 @@ class PykeaHomeSmart:
                 [str(key), str(val.attributes.custom_name), str(val.room.name), str(val.attributes.is_on), str(val.type),
                  str(val.is_reachable), str(val.id)])
         return object_list
-
-    def toggle_device_by_name(self, obj_name: str):
-        """
-        Toggles a device on or off.
-        :param obj_name: Device name string
-        :return: None
-        """
-        try:
-            obj = self.__get_device_by_custom_name(str(obj_name).lower())
-        except:
-            raise Exception('Device key or name is invalid. Check device list to see all available devices.')
-
-        if obj is None:
-            raise Exception('Device not found (None).')
-
-        if not obj.is_reachable:
-            raise Exception('Device not reachable. Please make sure the device is powered on.')
-
-        object_is_on_state = obj.attributes.is_on
-
-        if obj.type == 'light':
-            self.__dirigera_hub.get_light_by_id(obj.id).set_light(lamp_on=not object_is_on_state)
-        elif obj.type == 'outlet':
-            self.__dirigera_hub.get_outlet_by_id(obj.id).set_on(outlet_on=not object_is_on_state)
-        return
 
     def toggle_device_by_id(self, obj_key: int):
         """
