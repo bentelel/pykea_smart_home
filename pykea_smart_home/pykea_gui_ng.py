@@ -8,29 +8,45 @@ import pykea_home_smart as phs
 
 device_list = []
 backend = None
+# room list > key room name; values: [(device, key), (device, key)..]
+room_dict = {}
 def instanciate_backend():
     global backend
     backend = phs.PykeaHomeSmart()
     global device_list
     device_list = backend.get_smart_device_list()
+    global room_dict
+    room_dict = backend.get_room_dictionary()
 
-def toggle_device(sender, app_data):
-    #user_data = dpg.get_item_user_data(sender)
-    #global backend
-    #backend.toggle_device(user_data, 'n')
-    pass
+
 
 def show(event: ValueChangeEventArguments):
     name = type(event.sender).__name__
     ui.notify(f'{name}: {event.value}')
 
+def toggle_room(room_name):
+    try:
+        print(key)
+        backend.toggle_room(room_name)
+    except Exception as e:
+        print(e)
+
+def toggle_device(device_key):
+    try:
+        backend.toggle_device_by_id(int(device_key))
+    except Exception as e:
+        print(e)
+
 if __name__ in ("__main__","__mp_main__"):
     # The "__mp_main__" is needed to allow for multiprocessing which is needed in NiceGUI
-    #instanciate_backend()
+    instanciate_backend()
     ui.button('Button', on_click=lambda: ui.notify('Click'))
-    with ui.row():
-        ui.checkbox('Checkbox', on_change=show)
-        ui.switch('Switch', on_change=show)
+    for key, value in room_dict.items():
+        # this loop does not work correctly. the last room name gets associated with all lambda functions > better wording: at runtime key = key of last room
+        with ui.row():
+            ui.button(text=f'{key}', on_click=lambda: toggle_room(key))
+            # for v in value:
+                # ui.button(text=f'{v[0]}', on_click=lambda: toggle_device(v[1]))
     ui.radio(['A', 'B', 'C'], value='A', on_change=show).props('inline')
     with ui.row():
         ui.input('Text input', on_change=show)
