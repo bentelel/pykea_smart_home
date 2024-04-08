@@ -145,32 +145,28 @@ class PykeaHomeSmart:
         python = sys.executable
         os.execl(python, python, *sys.argv)
 
-    def change_light_level(self, obj_key, level):
+    def set_light_level(self, obj_key: int, level: int):
         """
         Changes the light level of the device if it supports light level changes.
-        :param obj_key: Device key of the device dictionary. integer
-        :param level: integer between 1 and 100 > 1%-100%
+        :param obj_key: integer, Device key of the device dictionary.
+        :param level: integer, between 1 and 100 > 1%-100%
         :return: None
         """
         if not isinstance(level, int):
             level = int(level)
         if not (1 <= level <= 100):
-            print('The light level must be between (including) 1 and 100.')
-            return
+            raise Exception('The light level must be between (including) 1 and 100.')
 
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
         except:
-            print('The device key invalid. Check list to see all available devices.')
-            return
+            raise Exception('The device key invalid. Check list to see all available devices.')
         if not obj.is_reachable:
-            print('The device not reachable. Please make sure the device is powered on.')
-            return
+            raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
-            print('The device not turned on. The hue will be changed anyhow.')
+            raise Exception('The device not turned on. Can\'t change light level.')
         if 'lightLevel' not in obj.capabilities.can_receive:
-            print('The device does not support light level changes.')
-            return
+            raise Exception('The device does not support light level changes.')
         self.__dirigera_hub.get_light_by_id(obj.id).set_light_level(level)
         return
 
@@ -187,48 +183,49 @@ class PykeaHomeSmart:
         if not obj.is_reachable:
             raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
-            raise Exception('The device not turned on. The hue will be changed anyhow.')
+            raise Exception('The device not turned on.')
         if 'lightLevel' not in obj.capabilities.can_receive:
             raise Exception('The device does not support light level changes.')
         return int(self.__dirigera_hub.get_light_by_id(obj.id).attributes.light_level)
 
-    def get_device_name(self, obj_key):
+    def get_device_name(self, obj_key: int):
+        """
+        Returns the device name.
+        :param obj_key: device key as per device dictionary
+        :return: name as string
+        """
         try:
+            obj_key = int(obj_key)
             device = self.__light_and_outlet_dict[obj_key]
             name = device.attributes.custom_name
-            return name
+            return str(name)
         except Exception as e:
             raise Exception(f"Could not find device name. \n Error trace: {e}")
 
-    def get_light_color_temp_range(self, obj_key):
+    def get_light_color_temp_range(self, obj_key: int):
         """
         Returns the minimum, maximum and current color temperature of the device if the device supports it.
         :param obj_key: Device key of the device dictionary. integer
-        :return: returns list [t_min, t_max, t_cur]
+        :return: returns tuple (t_min, t_max, t_cur)
         """
 
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
             name = obj.attributes.custom_name
-        except:
-            print('The device key invalid. Check list to see all available devices.')
-            return
+        except Exception as e:
+            raise Exception(f'The device key invalid. Check list to see all available devices. \n Error trace: {e}')
         if 'colorTemperature' not in obj.capabilities.can_receive:
-            print('The device does not support color temperature changes.')
-            return
+            raise Exception('The device does not support color temperature changes.')
         t_min = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_max
         t_max = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_min
         t_cur = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature
-        print('The temperature range for %s (key %s) is %s - %s lumen. '
-              'Currently the temperature is %s lumen.' % (name, obj_key, t_min, t_max, t_cur))
         if not obj.attributes.is_on:
-            print('The device is not turned on. The temperature can only be changed if the device is turned on.')
-            return
+            raise Exception('The device is not turned on. The temperature can only be changed if the device is turned on.')
         if not obj.is_reachable:
-            print('The device is currently not reachable. Please make sure the device is powered on.')
-            return [int(t_min), int(t_max), int(t_cur)]
+            raise Exception('The device is currently not reachable. Please make sure the device is powered on.')
+        return int(t_min), int(t_max), int(t_cur)
 
-    def set_color_temp(self, obj_key, temp):
+    def set_color_temp(self, obj_key: int, temp: int):
         """
         Changes the color temperature if the device supports it.
         :param obj_key: Device key of the device dictionary. integer
@@ -257,7 +254,7 @@ class PykeaHomeSmart:
         self.__dirigera_hub.get_light_by_id(obj.id).set_color_temperature(temp)
         return
 
-    def set_light_color(self, obj_key, r: int, g: int, b: int):
+    def set_light_color(self, obj_key: int, r: int, g: int, b: int):
         """
         Changes the light color of the device if the device supports it.
         :param obj_key: Device key of the device dictionary. integer

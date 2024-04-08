@@ -39,10 +39,10 @@ class CLI:
                     ,[])
             , ('lr', 'listroom', 'roomlist'): (
                     self.display_room_list,
-                   'Displays all available rooms, the number of their devices and their names.',
+                    'Displays all available rooms, the number of their devices and their names.',
                     [])
             , ('lv', 'slv', 'level', 'set_level'): (
-                    self.bridge_api.change_light_level,
+                    self.change_light_level,
                     'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the light level of light with key 2 to 100%',
                     ['-n'])
             , ('glv', 'get_level'): (
@@ -58,15 +58,15 @@ class CLI:
                     'Toggles all devices in a given room on or off. tr arbeitszimmer > toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to toggle by name: t some_device n > toggles the device named \'some_device\'.'
                     ,[])
             , ('c', 'sc', 'color'): (
-                    self.bridge_api.set_light_color,
+                    self.set_light_color,
                     'Change the devices color. takes integer parameters key r g b between 0 - 255. c 2 255 0 0 > sets the color of device 2 to pure red.'
-                    ,['-h', '-n'])
+                    ,['-n'])
             , ('ct','color_temp'): (
-                    self.bridge_api.set_color_temp,
+                    self.change_color_temp,
                     'Changes the color temperatur of a light. Takes one integer parameter which has to be inbetween the minimum and maximum temperatur of the light.\n \t\t\t To get the temparature range for a light, use command ctl. ct 2 3500 > sets the color temparature of light 2 to 3500 lumen.'
                     ,['-max', '-min', '-n'])
             , ('gct', 'get_color_temp'): (
-                    self.bridge_api.get_light_color_temp_range,
+                    self.display_light_color_temp_range,
                     'Displays the temprature range for a given light. ctl 2 > displays the range of the light with key 2.'
                     ,['-n'])
         }
@@ -85,7 +85,7 @@ class CLI:
         """
         try:
             user_input_parts = user_input.split(' ')
-            command = user_input_parts.pop(0) #get cmd part of input and delete that from the input list
+            command = user_input_parts.pop(0)  # get cmd part of input and delete that from the input list
             flags = [x for x in user_input_parts if x.startswith("-")]
             args = [x for x in user_input_parts if not x.startswith("-")]
 
@@ -193,10 +193,28 @@ class CLI:
         try:
             light_level = self.bridge_api.get_light_level(device_identifier)
             print('The light level of device %s is %s%%.' % (
-            str(self.bridge_api.get_device_name(int(device_identifier))),
-            str(light_level)))
+                str(self.bridge_api.get_device_name(int(device_identifier))),
+                str(light_level)))
         except Exception as e:
             print(f"Error: {e}")
+
+    def display_light_color_temp_range(self, args: list, flags: list):
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No device identifier was provided")
+        try:
+            if "-n" in flags:
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+        except Exception as e:
+            print(f"Error: {e}")
+        try:
+            t_min, t_max, t_cur = self.bridge_api.get_light_color_temp_range(device_identifier)
+            print('The temperature range for %s (key %s) is %s - %s lumen. '
+                  'Currently the temperature is %s lumen.'
+                  % (self.bridge_api.get_device_name(device_identifier), str(device_identifier), str(t_min), str(t_max), str(t_cur)))
+        except Exception as e:
+            print(f"Error: \n {e}")
 
     def toggle_device(self, args: list, flags: list):
         """
@@ -233,6 +251,94 @@ class CLI:
         except Exception as e:
             print(e)
 
+    def change_light_level(self, args: list, flags: list):
+        """
+        Changes the light level of a light.
+        :param args: [0] > device key or name; [1] light level as integer 1-100
+        :param flags: optional -n > change by name instead of key
+        :return:
+        """
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No device identifier was provided")
+        try:
+            light_level = int(args[1])
+        except:
+            raise Exception("No light level was provided")
+        try:
+            if "-n" in flags:
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+
+        except Exception as e:
+            print(f"Error: \n {e}")
+
+        try:
+            self.bridge_api.set_light_level(device_identifier, light_level)
+        except Exception as e:
+            print(f"Error: \n {e}")
+        return
+
+    def change_color_temp(self, args: list, flags: list):
+        """
+        Changes Light color temp.
+        :param args: [0] integer, object identifier, [1] integer, light color temperature
+        :param flags: optional, -n, -min, -max
+        :return:
+        """
+        if "-min" in flags and "-max" in flags:
+            print("min and max flag can not be set at the same time.")
+            return
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No device identifier was provided")
+        try:
+            if "-min" not  in flags and "-max" not in flags:
+                light_color_temp = int(args[1])
+        except:
+            raise Exception("No light_color_temp was provided")
+
+        try:
+            if "-n" in flags:
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+        except Exception as e:
+            print(f"Error: \n {e}")
+
+        try:
+            if "-min" not in flags and "-max" not in flags:
+                self.bridge_api.set_color_temp(device_identifier, light_color_temp)
+            elif "-min" in flags:
+                min_col_temp = self.bridge_api.get_light_color_temp_range(device_identifier)[0]
+                self.bridge_api.set_color_temp(device_identifier, min_col_temp)
+            elif "-max" in flags:
+                max_col_temp = self.bridge_api.get_light_color_temp_range(device_identifier)[1]
+                self.bridge_api.set_color_temp(device_identifier, max_col_temp)
+
+        except Exception as e:
+            print(f"Error: \n {e}")
+
+    def set_light_color(self, args: list, flags: list):
+        try:
+            device_identifier = args[0]
+        except:
+            raise Exception("No device identifier was provided")
+        try:
+            red_value = int(args[1])
+            green_value = int(args[2])
+            blue_value = int(args[3])
+        except:
+            raise Exception(f"Not all color values where provided.")
+        try:
+            if "-n" in flags:
+                device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
+        except Exception as e:
+            print(f"Error: \n {e}")
+        try:
+            self.bridge_api.set_light_color(device_identifier, red_value, green_value, blue_value)
+        except Exception as e:
+            print(f"Error: \n {e}")
+
     def __main(self):
         try:
             print('Welcome to the PyKEA home smart console. Enter a cmd or enter h to get a list of commands.')
@@ -244,7 +350,6 @@ class CLI:
         except Exception as e:
             print(e)
             self.quit()
-
 
 
 if __name__ == "__main__":
