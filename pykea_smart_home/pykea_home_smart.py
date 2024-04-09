@@ -3,16 +3,17 @@
 Created on Tue Feb 27 13:00:09 2024
 
 to do:
--color changing does not work yet > does only seem to work for certain rgb values and not continoues
+-color changing does not work yet > does only seem to work for certain rgb values and not seamless
     > either the calculation of hue only works for certain values or the lamp has a fixed set of possible colors
 
--fix bridget connection seeking on first startup. something is wrong with the token that gets created or something like that.
+-fix bridget connection seeking on first startup. something is wrong with the token that gets created or something like
+that.
 
 - divide "print list" and "get list" into 2 functions (one for call as a class and one for using CLI?)
 
-> object checks (ison isreachable.) > move into it's own function?
+> object checks (isOn isReachable.) > move into its own function?
 
-@author: LukasBentele
+@author: Lukas Bentele
 """
 
 import dirigera
@@ -27,7 +28,7 @@ import threading
 
 class PykeaHomeSmart:
     """
-    This class give access to various methods which allow a more user friendly access to the dirigera library.
+    This class give access to various methods which allow a more User friendly access to the dirigera library.
     The class can be called as an instance or run standalone as a CLI with text based commands.
     """
     def __init__(self):
@@ -45,8 +46,8 @@ class PykeaHomeSmart:
                 self.get_bridge_token()
 
             self.__dirigera_hub = dirigera.Hub(
-                token=self.__token_str
-                , ip_address=self.__dirigera_ip_str
+                token=self.__token_str,
+                ip_address=self.__dirigera_ip_str
             )
 
             # Initially fill the dictionary
@@ -92,12 +93,13 @@ class PykeaHomeSmart:
         command_base = 'generate-token '
         command_ip = ip_address
         command = command_base + command_ip
-        command_and_pause = command + " & echo Please copy the token before proceeding. You will be tasked to reenter it in the next step. & pause"
+        command_and_pause = command + (" & echo Please copy the token before proceeding. "
+                                       "You will be tasked to reenter it in the next step. & pause")
 
         try:
             os.system(command_and_pause)
         except Exception as e:
-            raise('Error: &s' % e)
+            raise Exception('Error: &s' % e)
 
         token = 'token as string goes here'
 
@@ -126,11 +128,11 @@ class PykeaHomeSmart:
 
     def get_device_id_by_custom_name(self, name: str):
         """
-        Gets a device object by its name as specified via the bridge (as opposed to getting it by the ID associated in the device dictionary).
+        Gets a device object by its name as specified via the bridge (as opposed to getting it by the ID associated in
+        the device dictionary).
         :param name: string, custom name of the device
         :return: int, Dictionary Key of Device
         """
-        #global light_and_outlet_dict
         for key, value in self.__light_and_outlet_dict.items():
             if value.attributes.custom_name.lower() == name:
                 return int(key)
@@ -159,8 +161,8 @@ class PykeaHomeSmart:
 
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-        except:
-            raise Exception('The device key invalid. Check list to see all available devices.')
+        except Exception as e:
+            raise Exception(f'The device key invalid. Check list to see all available devices. \n Error: {e}')
         if not obj.is_reachable:
             raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
@@ -179,7 +181,7 @@ class PykeaHomeSmart:
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
         except Exception as e:
-            raise Exception('The device key invalid. Check list to see all available devices.')
+            raise Exception(f'The device key invalid. Check list to see all available devices. \n Error: {e}')
         if not obj.is_reachable:
             raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
@@ -211,7 +213,6 @@ class PykeaHomeSmart:
 
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-            name = obj.attributes.custom_name
         except Exception as e:
             raise Exception(f'The device key invalid. Check list to see all available devices. \n Error trace: {e}')
         if 'colorTemperature' not in obj.capabilities.can_receive:
@@ -220,7 +221,8 @@ class PykeaHomeSmart:
         t_max = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_min
         t_cur = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature
         if not obj.attributes.is_on:
-            raise Exception('The device is not turned on. The temperature can only be changed if the device is turned on.')
+            raise Exception('The device is not turned on. The temperature can only be changed '
+                            'if the device is turned on.')
         if not obj.is_reachable:
             raise Exception('The device is currently not reachable. Please make sure the device is powered on.')
         return int(t_min), int(t_max), int(t_cur)
@@ -237,19 +239,20 @@ class PykeaHomeSmart:
 
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-        except:
-            raise Exception('The device key invalid. Check list to see all available devices.')
+        except Exception as e:
+            raise Exception(f'The device key invalid. Check list to see all available devices. \n Error: {e}')
         if not obj.is_reachable:
             raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
             raise Exception('The device is not turned on. The temperature will not be changed.')
         if 'colorTemperature' not in obj.capabilities.can_receive:
-            raise Exception('The device does not support color temparature changes.')
+            raise Exception('The device does not support color temperature changes.')
         t_min = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_max
         t_max = self.__dirigera_hub.get_light_by_id(obj.id).attributes.color_temperature_min
 
         if not (t_min <= temp <= t_max):
-            raise Exception('The specified temparature is out of the devices range. The range is %s - %s' % (t_min, t_max))
+            raise Exception('The specified temperature is out of the devices range. The range is %s - %s'
+                            % (t_min, t_max))
 
         self.__dirigera_hub.get_light_by_id(obj.id).set_color_temperature(temp)
         return
@@ -271,8 +274,8 @@ class PykeaHomeSmart:
             raise TypeError('Red, green and blue values must be integers between 0 and 255.')
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-        except:
-            raise Exception('The device key invalid. Check list to see all available devices.')
+        except Exception as e:
+            raise Exception(f'The device key invalid. Check list to see all available devices. \n Error: {e}')
         if not obj.is_reachable:
             raise Exception('The device not reachable. Please make sure the device is powered on.')
         if not obj.attributes.is_on:
@@ -281,8 +284,8 @@ class PykeaHomeSmart:
             raise Exception('The device does not support color changes.')
 
         # print('hue: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_hue))
-        # print('sat: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_saturation))
-        # print('temp: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_temperature))
+        # print('sat: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_saturation)))
+        # print('temp: ' + str(dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_temperature)
         # hue_normalized = dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_hue / 360
         # sat = dirigera_hub.get_light_by_id('54aef854-c8f0-4754-8ff2-adcf30c9fffc_1').attributes.color_saturation
         # r, g, b = colorsys.hls_to_rgb(hue_normalized, 0.5, float(sat))
@@ -344,8 +347,13 @@ class PykeaHomeSmart:
         object_list = []
         for key, val in self.__light_and_outlet_dict.items():
             object_list.append(
-                [str(key), str(val.attributes.custom_name), str(val.room.name), str(val.attributes.is_on), str(val.type),
-                 str(val.is_reachable), str(val.id)])
+                [str(key),
+                 str(val.attributes.custom_name),
+                 str(val.room.name),
+                 str(val.attributes.is_on),
+                 str(val.type),
+                 str(val.is_reachable),
+                 str(val.id)])
         return object_list
 
     def toggle_device_by_id(self, obj_key: int):
@@ -356,8 +364,8 @@ class PykeaHomeSmart:
         """
         try:
             obj = self.__light_and_outlet_dict[int(obj_key)]
-        except:
-            raise Exception('Device key or name is invalid. Check device list to see all available devices.')
+        except Exception as e:
+            raise Exception(f'Device key or name is invalid. Check device list to see all available devices. \n Error: {e}')
 
         if obj is None:
             raise Exception('Device not found (None).')

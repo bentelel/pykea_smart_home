@@ -15,60 +15,69 @@ class CLI:
         #          0: function to trigger
         #          1: Help text
         #          2: optional flags
-        # to call cmd use structure cmd -optional_flags argument1 argument2 ..
+        # to call cmd use structure cmd -optional_flags argument1 argument2
         self.__commands = {
             ('h', 'help'): (
                     self.display_help,
-                    'Displays the help menu.'
-                    ,[])
-            , ('q', 'quit'): (
+                    'Displays the help menu.',
+                    []),
+            ('q', 'quit'): (
                     self.quit,
-                    'Quits the program.'
-                    ,[])
-            , ('rs', 'restart'): (
+                    'Quits the program.',
+                    []),
+            ('rs', 'restart'): (
                     self.restart_program,
-                    'Restarts the program. Useful if you lost connection to your Dirigera bridge.'
-                    ,[])
-            , ('cl', 'clear'): (
+                    'Restarts the program. Useful if you lost connection to your Dirigera bridge.',
+                    []),
+            ('cl', 'clear'): (
                     self.clear_console,
                     'Clears all previous output in the window.',
-                    [])
-            , ('l', 'list'): (
+                    []),
+            ('l', 'list'): (
                     self.display_device_list,
-                    'Displays all available home smart devices and their key. The key can be used to access the device in other commands.'
-                    ,[])
-            , ('lr', 'listroom', 'roomlist'): (
+                    'Displays all available home smart devices and their key. The key can be used to access the device '
+                    'in other commands.',
+                    []),
+            ('lr', 'listroom', 'roomlist'): (
                     self.display_room_list,
                     'Displays all available rooms, the number of their devices and their names.',
-                    [])
-            , ('lv', 'slv', 'level', 'set_level'): (
+                    []),
+            ('lv', 'slv', 'level', 'set_level'): (
                     self.change_light_level,
-                    'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the light level of light with key 2 to 100%',
-                    ['-n'])
-            , ('glv', 'get_level'): (
+                    'Changes the light level of a light. Takes one integer parameter from 1 - 100. lv 2 100 > sets the '
+                    'light level of light with key 2 to 100%',
+                    ['-n']),
+            ('glv', 'get_level'): (
                     self.display_light_level,
                     'Displays the current light level of the device if the device supports light level changes.',
-                    ['-n'])
-            , ('t', 'toggle'): (
+                    ['-n']),
+            ('t', 'toggle'): (
                     self.toggle_device,
-                    'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off. Use flag -n to toggle by name. Name can\'t include spaces.',
-                    ['-n'])
-            , ('tr', 'toggle_room'): (
+                    'Toggles the devices given by the key (integer) on or off. t 1 > toggles device 1 on or off. '
+                    'Use flag -n to toggle by name. Name can\'t include spaces.',
+                    ['-n']),
+            ('tr', 'toggle_room'): (
                     self.toggle_room,
-                    'Toggles all devices in a given room on or off. tr arbeitszimmer > toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to toggle by name: t some_device n > toggles the device named \'some_device\'.'
-                    ,[])
-            , ('c', 'sc', 'color'): (
+                    'Toggles all devices in a given room on or off. tr arbeitszimmer > '
+                    'toggles device in the \'arbeitszimmer\' or off. \n \t\t\t Use optional parameter \'n\' to '
+                    'toggle by name: t some_device n > toggles the device named \'some_device\'.',
+                    []),
+            ('c', 'sc', 'color'): (
                     self.set_light_color,
-                    'Change the devices color. takes integer parameters key r g b between 0 - 255. c 2 255 0 0 > sets the color of device 2 to pure red.'
-                    ,['-n'])
-            , ('ct','color_temp'): (
+                    'Change the devices color. takes integer parameters key r g b between 0 - 255. c 2 255 0 0 > '
+                    'sets the color of device 2 to pure red.',
+                    ['-n']),
+            ('ct', 'color_temp'): (
                     self.change_color_temp,
-                    'Changes the color temperatur of a light. Takes one integer parameter which has to be inbetween the minimum and maximum temperatur of the light.\n \t\t\t To get the temparature range for a light, use command ctl. ct 2 3500 > sets the color temparature of light 2 to 3500 lumen.'
-                    ,['-max', '-min', '-n'])
-            , ('gct', 'get_color_temp'): (
+                    'Changes the color temperature of a light. Takes one integer parameter which has to be inbetween '
+                    'the minimum and maximum temperature of the light.\n \t\t\t To get the temperature range for a '
+                    'light, use command ctl. ct 2 3500 > sets the color temperature of light 2 to 3500 lumen.',
+                    ['-max', '-min', '-n']),
+            ('gct', 'get_color_temp'): (
                     self.display_light_color_temp_range,
-                    'Displays the temprature range for a given light. ctl 2 > displays the range of the light with key 2.'
-                    ,['-n'])
+                    'Displays the temperature range for a given light. '
+                    'ctl 2 > displays the range of the light with key 2.',
+                    ['-n'])
         }
         self.__available_commands = [item for key in self.__commands.keys() for item in key]
 
@@ -78,7 +87,8 @@ class CLI:
 
     def command_parser(self, user_input: str):
         """
-        This parses the user input into a runable command, optional flags and command arguments and runs the command if possible.
+        This parses the user input into a run-able command, optional flags and command arguments
+        and runs the command if possible.
         Attention: args can not start with "-" or they will be interpreted as flags!
         :param user_input: string typed by user.
         :return: None
@@ -118,8 +128,10 @@ class CLI:
 
     def quit(self):
         """
-        Quits the program. Currently this quits because the APIs quit_program() is called. However idially the APIs method should only halt the API and then we use sys.exit in the CLI class to terminate the whole program.
-        But that does not work as intended i think so for now it stays like this.
+        Quits the program. Currently this quits because the APIs quit_program() is called.
+        However idially the APIs method should only halt the API and then we use
+        sys.exit in the CLI class to terminate the whole program.
+        But that does not work as intended I think so for now it stays like this.
         :return:
         """
         self.bridge_api.quit_program()
@@ -128,7 +140,8 @@ class CLI:
     def restart_program(self):
         """
         This does not work yet! it should kill the underlying bridge API instance and open up a new functional once.
-        The old instance keeps running. However calling the stop refreshing function or quit program function of the API does not work either.
+        The old instance keeps running. However, calling the stop refreshing function or quit program function of the
+        API does not work either.
         :return:
         """
         self.clear_console()
@@ -153,16 +166,16 @@ class CLI:
             object_list = self.bridge_api.get_smart_device_list()
             print(object_list)
 
-            print('#### Homesmart devices ####')
+            print('#### IKEA Smart Home devices ####')
             for obj in object_list:
                 print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20} {:<20}".format(
-                    'Key: ' + str(obj[0])
-                    , ' | Name: ' + str(obj[1])
-                    , '  | Room: ' + str(obj[2])
-                    , ' | Is On: ' + str(obj[3])
-                    , ' | Type: ' + str(obj[4])
-                    , '  | Reachable: ' + str(obj[5])
-                    , ' | Id: ' + str(obj[6])
+                    'Key: ' + str(obj[0]),
+                    ' | Name: ' + str(obj[1]),
+                    '  | Room: ' + str(obj[2]),
+                    ' | Is On: ' + str(obj[3]),
+                    ' | Type: ' + str(obj[4]),
+                    '  | Reachable: ' + str(obj[5]),
+                    ' | Id: ' + str(obj[6])
                 )
                 )
         except Exception as e:
@@ -174,8 +187,8 @@ class CLI:
             print("Available rooms and devices:")
             for key, value in room_dict.items():
                 print('{:<20} {:<20}'.format(
-                    '%s : ' % str(key)
-                    , '%s' % (', '.join(item[0] for item in value))
+                    '%s : ' % str(key),
+                    '%s' % (', '.join(item[0] for item in value))
                 ))
         except Exception as e:
             raise Exception(f"Could not fetch room list from API. \n {e}")
@@ -183,8 +196,8 @@ class CLI:
     def display_light_level(self, args: list, flags: list):
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
             if "-n" in flags:
                 device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
@@ -201,8 +214,8 @@ class CLI:
     def display_light_color_temp_range(self, args: list, flags: list):
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
             if "-n" in flags:
                 device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
@@ -212,7 +225,11 @@ class CLI:
             t_min, t_max, t_cur = self.bridge_api.get_light_color_temp_range(device_identifier)
             print('The temperature range for %s (key %s) is %s - %s lumen. '
                   'Currently the temperature is %s lumen.'
-                  % (self.bridge_api.get_device_name(device_identifier), str(device_identifier), str(t_min), str(t_max), str(t_cur)))
+                  % (self.bridge_api.get_device_name(device_identifier),
+                     str(device_identifier),
+                     str(t_min),
+                     str(t_max),
+                     str(t_cur)))
         except Exception as e:
             print(f"Error: \n {e}")
 
@@ -225,8 +242,8 @@ class CLI:
         """
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
             if "-n" in flags:
                 device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
@@ -244,8 +261,8 @@ class CLI:
         """
         try:
             room_name = args[0]
-        except:
-            raise Exception("No room name was provided")
+        except Exception as e:
+            raise Exception(f"No room name was provided. \n Error: {e}")
         try:
             self.bridge_api.toggle_room(room_name)
         except Exception as e:
@@ -260,12 +277,12 @@ class CLI:
         """
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
             light_level = int(args[1])
-        except:
-            raise Exception("No light level was provided")
+        except Exception as e:
+            raise Exception(f"No light level was provided. \n Error: {e}")
         try:
             if "-n" in flags:
                 device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
@@ -291,13 +308,13 @@ class CLI:
             return
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
-            if "-min" not  in flags and "-max" not in flags:
+            if "-min" not in flags and "-max" not in flags:
                 light_color_temp = int(args[1])
-        except:
-            raise Exception("No light_color_temp was provided")
+        except Exception as e:
+            raise Exception(f"No light_color_temp was provided. \n Error: {e}")
 
         try:
             if "-n" in flags:
@@ -321,14 +338,14 @@ class CLI:
     def set_light_color(self, args: list, flags: list):
         try:
             device_identifier = args[0]
-        except:
-            raise Exception("No device identifier was provided")
+        except Exception as e:
+            raise Exception(f"No device identifier was provided. \n Error: {e}")
         try:
             red_value = int(args[1])
             green_value = int(args[2])
             blue_value = int(args[3])
-        except:
-            raise Exception(f"Not all color values where provided.")
+        except Exception as e:
+            raise Exception(f"Not all color values where provided. \n Error: {e}")
         try:
             if "-n" in flags:
                 device_identifier = self.bridge_api.get_device_id_by_custom_name(device_identifier)
