@@ -1,64 +1,78 @@
 # To do: understand item relationships, how to spawn new items according to a template and fill with connections to backend
 # also how to destroy items and deallocate stuff and how to close the program for good.
+import time
 
-
-from nicegui import ui,events
+from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 import pykea_home_smart as phs
 
-device_list = []
-backend = None
-# room list > key room name; values: [(device, key), (device, key)..]
-room_dict = {}
-def instanciate_backend():
-    global backend
-    backend = phs.PykeaHomeSmart()
-    global device_list
-    device_list = backend.get_smart_device_list()
-    global room_dict
-    room_dict = backend.get_room_dictionary()
+
+class UI:
+    """
+    Class holding everything the UI needs and all associated methods.
+    """
+
+    def __init__(self):
+        self.backend, self.device_list, self.room_dict = self.instantiate_backend()
+        self.BACKGROUND_COLOR_UI = '#ddeeff'
+        self.BACKGROUND_COLOR_ROOM_BUTTON = '#fcba03'
+        self.POLL_RATE_IN_S = 5
+
+        ui.query('body').style(f'background-color: {self.BACKGROUND_COLOR_UI}')  # Set background color of tab
+
+        self.build_room_and_device_buttons()
+
+        # ui.timer(SETTINGS.POLL_RATE_IN_S, lambda: refresh_ui_elements())
+
+        ui.run()
+
+    def instantiate_backend(self):
+        backend = phs.PykeaHomeSmart()
+        device_list = backend.get_smart_device_list()
+        room_dict = backend.get_room_dictionary()
+        room_dict_sorted = {k: room_dict[k] for k in sorted(room_dict)}
+        return backend, device_list, room_dict_sorted
+
+    def handle_exception(self, e):
+        ui.notify(e, close_button='Dismiss')
+
+    def toggle_room(self, room_name):
+        try:
+            self.backend.toggle_room(room_name)
+        except Exception as e:
+            self.handle_exception(e)
+
+    def toggle_device(self, device_key):
+        try:
+            print(device_key)
+            self.backend.toggle_device_by_id(int(device_key))
+        except Exception as e:
+            self.handle_exception(e)
+
+    @ui.refreshable
+    def build_room_and_device_buttons(self):
+        try:
+            for key, value in self.room_dict.items():
+                with ui.row():
+                    with ui.button_group():
+                        ui.button(text=f'{key}',
+                                  color=self.BACKGROUND_COLOR_ROOM_BUTTON,
+                                  on_click=lambda i=key: self.toggle_room(i))
+                        for v in value:
+                            device_name = v[0]
+                            device_key = v[1]
+                            ui.button(text=f'{device_name}',
+                                      on_click=lambda j=device_key: self.toggle_device(j))
+            return
+        except Exception as e:
+            self.handle_exception(e)
+
+    def refresh_ui_elements(self):
+        ui.notify("refreshing")
+        self.room_dict.pop(0)
+        self.build_room_and_device_buttons.refresh()
 
 
-
-def show(event: ValueChangeEventArguments):
-    name = type(event.sender).__name__
-    ui.notify(f'{name}: {event.value}')
-
-def toggle_room(room_name):
-    try:
-        print(room_name)
-        backend.toggle_room(room_name)
-    except Exception as e:
-        print(e)
-
-def toggle_device(device_key):
-    try:
-        print(device_key)
-        backend.toggle_device_by_id(int(device_key))
-    except Exception as e:
-        print(e)
-
-
-
-if __name__ in ("__main__","__mp_main__"):
-    # The "__mp_main__" is needed to allow for multiprocessing which is needed in NiceGUI
-    instanciate_backend()
-    ui.button('Button', on_click=lambda: ui.notify('Click'))
-
-
-
-    for key, value in room_dict.items():
-        # this loop does not work correctly. the last room name gets associated with all lambda functions > better wording: at runtime key = key of last room
-        with ui.row():
-            ui.button(text=f'{key}', on_click=lambda i=key: toggle_room(i))
-            for v in value:
-                device_name = v[0]
-                device_key = v[1]
-                ui.button(text=f'{device_name}', on_click=lambda j=device_key: toggle_device(j))
-    ui.radio(['A', 'B', 'C'], value='A', on_change=show).props('inline')
-    with ui.row():
-        ui.input('Text input', on_change=show)
-        ui.select(['One', 'Two'], value='One', on_change=show)
-    ui.link('And many more...', '/documentation').classes('mt-8')
-
-    ui.run()
+if __name__ in ("__main__", "__mp_main__"):
+    # "__mp_main__" is needed to allow for multiprocessing which is needed in NiceGUI
+    ui_instance = UI()
