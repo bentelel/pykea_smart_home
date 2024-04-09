@@ -164,8 +164,6 @@ class CLI:
     def display_device_list(self):
         try:
             object_list = self.bridge_api.get_smart_device_list()
-            print(object_list)
-
             print('#### IKEA Smart Home devices ####')
             for obj in object_list:
                 print("{:<8}  {:<25} {:<25} {:<15} {:<15} {:<20} {:<20}".format(
