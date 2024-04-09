@@ -2,7 +2,7 @@
 # also how to destroy items and deallocate stuff and how to close the program for good.
 
 
-from nicegui import ui
+from nicegui import ui,events
 from nicegui.events import ValueChangeEventArguments
 import pykea_home_smart as phs
 
@@ -26,27 +26,35 @@ def show(event: ValueChangeEventArguments):
 
 def toggle_room(room_name):
     try:
-        print(key)
+        print(room_name)
         backend.toggle_room(room_name)
     except Exception as e:
         print(e)
 
 def toggle_device(device_key):
     try:
+        print(device_key)
         backend.toggle_device_by_id(int(device_key))
     except Exception as e:
         print(e)
+
+
 
 if __name__ in ("__main__","__mp_main__"):
     # The "__mp_main__" is needed to allow for multiprocessing which is needed in NiceGUI
     instanciate_backend()
     ui.button('Button', on_click=lambda: ui.notify('Click'))
+
+
+
     for key, value in room_dict.items():
         # this loop does not work correctly. the last room name gets associated with all lambda functions > better wording: at runtime key = key of last room
         with ui.row():
-            ui.button(text=f'{key}', on_click=lambda: toggle_room(key))
-            # for v in value:
-                # ui.button(text=f'{v[0]}', on_click=lambda: toggle_device(v[1]))
+            ui.button(text=f'{key}', on_click=lambda i=key: toggle_room(i))
+            for v in value:
+                device_name = v[0]
+                device_key = v[1]
+                ui.button(text=f'{device_name}', on_click=lambda j=device_key: toggle_device(j))
     ui.radio(['A', 'B', 'C'], value='A', on_change=show).props('inline')
     with ui.row():
         ui.input('Text input', on_change=show)
