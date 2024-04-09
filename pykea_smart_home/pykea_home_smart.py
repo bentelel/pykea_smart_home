@@ -356,6 +356,23 @@ class PykeaHomeSmart:
                  str(val.id)])
         return object_list
 
+    def get_device_dictionary(self):
+        """
+        Returns the APIs "private" device dictionary if the list from get_smart_device_list is not sufficient.
+        Returns a dictionary whose keys are the IDs as per the API.
+        :return: {API_DEVICE_ID: (custom_name, room_name, is_on, type, is_reachable, ikea_bridge_id)}
+        """
+        device_dict = {}
+        for key, val in self.__light_and_outlet_dict.items():
+            device_dict[key] =(
+                 str(val.attributes.custom_name),
+                 str(val.room.name),
+                 str(val.attributes.is_on),
+                 str(val.type),
+                 str(val.is_reachable),
+                 str(val.id))
+        return device_dict
+
     def toggle_device_by_id(self, obj_key: int):
         """
         Toggles a device on or off.
