@@ -26,7 +26,7 @@ class UI:
         self.BACKGROUND_COLOR_DEVICE_BUTTON_OFF = '#036ffc'
         self.BACKGROUND_COLOR_DEVICE_BUTTON_UNREACHABLE = '#757778'
         self.POLL_RATE_IN_S = 2.0
-        self.refresh_flag = True
+        self.refresh_flag = False
 
         self.active_tab = None
 
@@ -43,6 +43,7 @@ class UI:
         if self.refresh_flag:
             ui.timer(self.POLL_RATE_IN_S, lambda: self.refresh_ui_elements())
 
+        ui.page_title('pykea smart home')
         ui.run()
         print('init done')
 
@@ -93,7 +94,7 @@ class UI:
                     second_tab: first_tab
                 }
                 if not self.active_tab:
-                    self.set_active_tab(second_tab)
+                    self.set_active_tab(first_tab)
                 with ui.tab_panels(tabs, value=self.active_tab
                         #,on_change=lambda i=tab_dict[self.active_tab]: self.set_active_tab(i)
                                    ).classes('w-full'):
@@ -157,7 +158,8 @@ class UI:
             print(e)
 
 
-if __name__ in ("__main__", "__mp_main__"):
+if __name__ in ("__mp_main__"):
+    pass
     # "__mp_main__" is needed to allow for multiprocessing which is needed in NiceGUI
     # this will be triggered twice. once by running this skript and once by ui.run() i think because ui.run() spawns a subprocess
-    ui_instance = UI()
+ui_instance = UI()
