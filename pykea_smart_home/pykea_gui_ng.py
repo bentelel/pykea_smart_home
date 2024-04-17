@@ -25,8 +25,8 @@ class UI:
         self.BACKGROUND_COLOR_DEVICE_BUTTON_ON = '#03d3fc'
         self.BACKGROUND_COLOR_DEVICE_BUTTON_OFF = '#036ffc'
         self.BACKGROUND_COLOR_DEVICE_BUTTON_UNREACHABLE = '#757778'
-        self.POLL_RATE_IN_S = 2.0
-        self.refresh_flag = False
+        self.POLL_RATE_IN_S = 0.5
+        self.refresh_flag = True
 
         self.active_tab = None
 
@@ -41,7 +41,7 @@ class UI:
 
 
         if self.refresh_flag:
-            ui.timer(self.POLL_RATE_IN_S, lambda: self.refresh_ui_elements())
+            ui.timer(self.POLL_RATE_IN_S, lambda: self.refresh_device_and_room_dicts())
 
         ui.page_title('pykea smart home')
         ui.run()
@@ -59,23 +59,23 @@ class UI:
         except Exception as e:
             self.handle_exception(e)
 
-    def handle_exception(self, e):
+    def handle_exception(self, e) -> None:
         ui.notify(e, close_button='Dismiss')
         print(f"Error: {e}")
 
-    def toggle_room(self, room_name):
+    def toggle_room(self, room_name) -> None:
         try:
             self.backend.toggle_room(room_name)
         except Exception as e:
             self.handle_exception(e)
 
-    def toggle_device(self, device_key):
+    def toggle_device(self, device_key) -> None:
         try:
             self.backend.toggle_device_by_id(int(device_key))
         except Exception as e:
             self.handle_exception(e)
 
-    def set_active_tab(self, new_active_tab):
+    def set_active_tab(self, new_active_tab) -> None:
         #ui.notify(new_active_tab)
         try:
             self.active_tab = new_active_tab
@@ -83,7 +83,7 @@ class UI:
             self.handle_exception(e)
 
     @ui.refreshable_method
-    def build_room_and_device_buttons(self):
+    def build_room_and_device_buttons(self) -> None:
         try:
 
             with ui.tabs().classes('w-full') as tabs:
@@ -135,12 +135,20 @@ class UI:
                                 ui.button(text=f'{device_name}',
                                           color=button_color,
                                           on_click=lambda j=key: self.toggle_device(j))
-                return
         except Exception as e:
             self.handle_exception(f"test {e}")
 
 
-    def refresh_ui_elements(self):
+    def refresh_device_and_room_dicts(self) -> None:
+        try:
+            device_dict = self.backend.get_device_dictionary()
+            self.device_dict = {k: device_dict[k] for k in sorted(device_dict)}
+            room_dict = self.backend.get_room_dictionary()
+            self.room_dict = {k: room_dict[k] for k in sorted(room_dict)}
+        except Exception as e:
+            self.handle_exception(f"test {e}")
+
+    def refresh_ui_elements(self) -> None:
         """
         This refreshes the dictionaries fetched from the backend and refreshes all ui elements which are
         build using build_room_and_device_buttons.
@@ -148,14 +156,9 @@ class UI:
         :return None:
         """
         try:
-            device_dict = self.backend.get_device_dictionary()
-            self.device_dict = {k: device_dict[k] for k in sorted(device_dict)}
-            room_dict = self.backend.get_room_dictionary()
-            self.room_dict = {k: room_dict[k] for k in sorted(room_dict)}
             self.build_room_and_device_buttons.refresh()
-            return
         except Exception as e:
-            print(e)
+            self.handle_exception(f"test {e}")
 
 
 if __name__ in ("__mp_main__"):
